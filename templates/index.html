@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart-ICS Sentinel | Bio-Secure OT Engine</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#040D09] text-[#E2E8F0] font-mono min-h-screen p-6 selection:bg-emerald-500 selection:text-black">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="border-b border-emerald-500/20 pb-4 mb-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-wider text-emerald-400 flex items-center gap-2">
+                    <span>🧬</span> Smart-ICS Sentinel
+                </h1>
+                <p class="text-xs text-teal-400 tracking-wide">Context & Physics-Aware OT Defense Engine</p>
+            </div>
+            <div class="bg-[#081C14] border border-emerald-500/30 px-3 py-1 rounded-full text-xs text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                System Active
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Left Panel: Controls -->
+            <div class="bg-[#081C14] border border-emerald-900/40 rounded-xl p-5 col-span-1 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+                <h2 class="text-xs font-bold text-teal-300 mb-4 uppercase tracking-widest">Command Center</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1 uppercase">Target Temperature (°C)</label>
+                        <input type="number" id="targetTemp" value="110" class="w-full bg-[#040D09] border border-emerald-900/60 rounded-lg p-2.5 text-emerald-400 focus:outline-none focus:border-emerald-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1 uppercase">User Role</label>
+                        <select id="userRole" class="w-full bg-[#040D09] border border-emerald-900/60 rounded-lg p-2.5 text-slate-300 focus:outline-none focus:border-emerald-500 transition">
+                            <option value="admin">Administrator</option>
+                            <option value="operator">Field Operator</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2 pt-2">
+                        <input type="checkbox" id="isMaintenance" class="rounded bg-[#040D09] border-emerald-900 text-emerald-500 focus:ring-0">
+                        <label class="text-xs text-slate-300">Scheduled Maintenance Mode</label>
+                    </div>
+                    
+                    <button onclick="sendAttackCommand()" class="w-full bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-500 hover:to-rose-600 text-white font-bold py-2.5 px-4 rounded-lg transition text-xs tracking-wider uppercase shadow-lg shadow-red-900/30">
+                        Simulate Attack / Command
+                    </button>
+                    <button onclick="sendSafeCommand()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-black font-bold py-2.5 px-4 rounded-lg transition text-xs tracking-wider uppercase shadow-lg shadow-emerald-900/20">
+                        Send Safe Adjustment (-28°C)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Panel: Live Logs & Status -->
+            <div class="bg-[#081C14] border border-emerald-900/40 rounded-xl p-5 col-span-2 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-600 to-emerald-500"></div>
+                <div>
+                    <h2 class="text-xs font-bold text-teal-300 mb-4 uppercase tracking-widest">Live Sensor & Security Telemetry</h2>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-[#040D09] border border-emerald-900/50 p-4 rounded-xl">
+                            <span class="text-[10px] uppercase text-slate-500 block mb-1">Current Storage Temp</span>
+                            <span id="currentTempDisplay" class="text-3xl font-bold text-emerald-400 tracking-tight">{{ current_temp }}°C</span>
+                        </div>
+                        <div class="bg-[#040D09] border border-emerald-900/50 p-4 rounded-xl">
+                            <span class="text-[10px] uppercase text-slate-500 block mb-1">Absolute Safe Limit</span>
+                            <span class="text-3xl font-bold text-teal-400 tracking-tight">+5.0°C</span>
+                        </div>
+                    </div>
+
+                    <h3 class="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wide">Execution Logs</h3>
+                    <div id="logBox" class="bg-[#040D09] border border-emerald-900/50 rounded-xl p-3 h-48 overflow-y-auto text-xs space-y-2 text-slate-300">
+                        <p class="text-slate-600">[System initialized with Bio-Secure protocol. Waiting for telemetry...]</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function sendAttackCommand() {
+            const temp = document.getElementById('targetTemp').value;
+            const role = document.getElementById('userRole').value;
+            const maintenance = document.getElementById('isMaintenance').checked;
+            executeCommand(temp, role, maintenance);
+        }
+
+        async function sendSafeCommand() {
+            executeCommand(-28.0, 'operator', true);
+        }
+
+        async function executeCommand(targetTemp, role, isMaintenance) {
+            const response = await fetch('/api/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ target_temp: parseFloat(targetTemp), role: role, is_maintenance: isMaintenance })
+            });
+            const data = await response.json();
+            
+            document.getElementById('currentTempDisplay').innerText = data.current_temp + '°C';
+            
+            const logBox = document.getElementById('logBox');
+            let colorClass = data.result.status === 'SUCCESS' ? 'text-emerald-400' : 'text-rose-400';
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = `border-l-2 pl-3 py-1 ${data.result.status === 'SUCCESS' ? 'border-emerald-500 bg-emerald-500/5' : 'border-rose-500 bg-rose-500/5'} rounded-r`;
+            logEntry.innerHTML = `<span class="text-slate-500">[${data.timestamp}]</span> <span class="${colorClass} font-bold">[${data.result.status}]</span> ${data.result.reason}`;
+            logBox.prepend(logEntry);
+        }
+    </script>
+</body>
+</html>
